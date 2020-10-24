@@ -1,23 +1,40 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CustomThreadPulling
 {
+    public delegate void TaskDelegate();
     public class TaskQueue
     {
-        //void delegate TaskDelegate();
+        private int attempt = 0;
+        private ConcurrentQueue<TaskDelegate> taskQueue = new ConcurrentQueue<TaskDelegate>();
 
-        // Содержит очередь задач в виде делегатов без параметров.
+        // Создание указанного количества потоков пула.
         public TaskQueue(int threadQuantity)
         {
-            // Создание указанного количества потоков пула.
-            ThreadPool.SetMinThreads(threadQuantity, threadQuantity);
+            ThreadPool.SetMaxThreads(threadQuantity, threadQuantity);
+        }
+
+        public void EnqueueTask(TaskDelegate task)
+        {
+            taskQueue.Enqueue(task);
+            ExecuteTask();
+        }
+
+        private void ExecuteTask()
+        {
+            while (taskQueue.Count != 0)
+            {
+                TaskDelegate task;
+                if (!taskQueue.TryDequeue(out task)) 
+                    continue;
+                attempt++;
+                Thread.Sleep(10);
+                Console.WriteLine(attempt + " attempt:");
+                Task.Run(() => task());
+            }
         }
     }
-
-    /*Чтобы запросить поток из пула для обработки вызова метода, 
-     * можно использовать метод QueueUserWorkItem(). Этот метод 
-     * перегружен, чтобы в дополнение к экземпляру делегата 
-     * WaitCallback позволить указывать необязательный параметр 
-     * System.Object для специальных данных состояния.*/
 }
