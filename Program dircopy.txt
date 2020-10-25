@@ -1,0 +1,31 @@
+            Console.Write("Enter source directory: ");
+            var srcDir = Console.ReadLine();
+            if (Directory.Exists(srcDir))
+            {
+                Console.WriteLine("Exists");
+            }
+            else
+            {
+                Console.WriteLine("Directory does not exists");
+                return;
+            }
+
+            Console.Write("Enter destination directory: ");
+            var destDir = Console.ReadLine();
+            if (Directory.Exists(destDir))
+            {
+                Console.WriteLine("Exists");
+            }
+            else
+            {
+                Console.WriteLine("Directory does not exists");
+                return;
+            }
+
+            var dirCopier = new DirCopier();
+
+            var srcDirs = Directory.GetDirectories(srcDir);
+            foreach (string dir in srcDirs)
+            {
+                Console.WriteLine(dir);
+            }
