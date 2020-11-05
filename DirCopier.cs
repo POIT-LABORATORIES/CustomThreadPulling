@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using CustomThreadPulling;
 
 namespace DirCopying
 {
@@ -12,6 +13,42 @@ namespace DirCopying
         {
             get => copiedFiles;
         }
+
+        // Параллельное копирование файлов при помощи класса TaskQueue.
+        public static void ParallelQueueDirCopy(string sDir, string dDir)
+        {
+            if (Directory.Exists(sDir))
+            {
+                foreach (string dir in Directory.GetDirectories(sDir))
+                {
+                    var destDirName = new DirectoryInfo(dir);
+                    string newDestDir = Path.Combine(dDir, destDirName.Name);
+                    ParallelQueueDirCopy(dir, newDestDir);
+                }
+
+                if (!Directory.Exists(dDir))
+                    Directory.CreateDirectory(dDir);
+
+                var taskQueue = new TaskQueue(6);
+                foreach (string file in Directory.GetFiles(sDir))
+                {
+                    TaskDelegate copyingTask = () =>
+                    {
+                        string fileName = Path.GetFileName(file);
+                        string sourceFile = Path.Combine(sDir, fileName);
+                        string destFile = Path.Combine(dDir, fileName);
+                        File.Copy(sourceFile, destFile, true);
+                        Interlocked.Increment(ref copiedFiles);
+                        Console.WriteLine($"COPIED by {Thread.CurrentThread.ManagedThreadId} thread- "
+                            + destFile);
+                    };
+                    taskQueue.EnqueueTask(copyingTask);
+                }
+                Task.WaitAll(taskQueue.activeTaskList.ToArray());
+            }
+        }
+
+        // Параллельное копирование файлов при помощи класса Parallel.
         public static void ParallelDirCopy(string sDir, string dDir)
         {
             if (Directory.Exists(sDir))
@@ -38,6 +75,7 @@ namespace DirCopying
             }
         }
 
+        // Последовательное копирование файлов в одном потоке.
         public static void DirCopy(string sDir, string dDir)
         {
             if (Directory.Exists(sDir))
@@ -57,7 +95,7 @@ namespace DirCopying
                     string sourceFile = Path.Combine(sDir, fileName);
                     string destFile = Path.Combine(dDir, fileName);
                     File.Copy(sourceFile, destFile, true);
-                    Interlocked.Increment(ref copiedFiles);
+                    copiedFiles++;
                     Console.WriteLine("COPIED - " + destFile);
                 }
             }

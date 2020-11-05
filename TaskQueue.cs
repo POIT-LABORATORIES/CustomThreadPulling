@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,6 +9,7 @@ namespace CustomThreadPulling
     public class TaskQueue
     {
         private ConcurrentQueue<TaskDelegate> taskQueue = new ConcurrentQueue<TaskDelegate>();
+        public readonly List<Task> activeTaskList = new List<Task>();
 
         // Создание указанного количества потоков пула.
         public TaskQueue(int threadQuantity)
@@ -27,7 +29,7 @@ namespace CustomThreadPulling
             {
                 if (!taskQueue.TryDequeue(out TaskDelegate task))
                     continue;
-                Task.Run(() => task());
+                activeTaskList.Add(Task.Run(() => task()));
             }
         }
     }
